@@ -1,0 +1,7 @@
+{
+  "version": "v6.20.1",
+  "taskTreeSha256": "7c847de720df506ce755540d7401d890a3106df4407aa4a2075ea19ea8906674",
+  "officialMainTasksSha256": "97575f4f49613ad61ab1fe7dac4b72575aa64aab0998d0f2b1568c897d9714c2",
+  "source": "https://github.com/MaaAssistantArknights/MaaAssistantArknights/blob/v6.20.1/resource/tasks/tasks.json",
+  "scope": "Supported installed task resource inventory; overlays or updates require review. Not a claim of universal MAA compatibility."
+}

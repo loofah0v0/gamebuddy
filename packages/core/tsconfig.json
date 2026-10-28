@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "lib",
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "src/index.ts",
+    "src/contracts.ts",
+    "src/engine.ts",
+    "src/process.ts"
+  ],
+  "references": []
+}

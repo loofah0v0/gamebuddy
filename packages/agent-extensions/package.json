@@ -1,0 +1,24 @@
+{
+  "name": "@gameguy/agent-extensions",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./remote": "./remote.mjs",
+    "./typert": "./typert.mjs"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout",
+        "@deepseek-ai/dsh-client-ui-sidebar"
+      ],
+      "platform": "web"
+    }
+  }
+}

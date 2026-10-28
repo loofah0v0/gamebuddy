@@ -1,0 +1,2 @@
+import {build} from 'esbuild';
+await build({entryPoints:['packages/core/src/client.ts'],bundle:true,external:['react','react/jsx-runtime'],sourcemap:true,format:'cjs',platform:'browser',target:'es2022',outfile:'packages/core/lib/client.js',banner:{js:'window.__ModuleLoader__.load({id:"@gameguy/core",factory:(require)=>{var module={exports:{}};var exports=module.exports;'},footer:{js:'return module.exports;}});'}});

@@ -1,0 +1,7 @@
+- insert:
+    - id: gameguy-core
+      name: "@gameguy/core"
+      config:
+        dataDir: D:/Gameguy/.runtime/gameguy
+        catalogRoot: D:/Gameguy/packages
+        autoInstallTrusted: true

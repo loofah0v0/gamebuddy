@@ -1,0 +1,24 @@
+{
+  "name": "@gameguy/native-client",
+  "version": "0.3.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./credentials": "./credentials.mjs",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-sidebar",
+        "@deepseek-ai/dsh-client-ui-sidebar-right",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-layout"
+      ],
+      "platform": "web"
+    }
+  }
+}

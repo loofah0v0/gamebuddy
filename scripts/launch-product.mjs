@@ -1,0 +1,10 @@
+import {resolveElectronRuntime} from './electron-runtime.mjs';
+import {spawn} from 'node:child_process';
+import {resolve} from 'node:path';
+import {existsSync} from 'node:fs';
+const root=resolve(import.meta.dirname,'..');
+if(!existsSync(resolve(root,'product/catalog.json')))throw Error('先运行 npm run build');
+const electron=await resolveElectronRuntime();
+const env={...process.env,GAMEGUY_NODE:process.execPath};delete env.ELECTRON_RUN_AS_NODE;
+const child=spawn(electron,[resolve(root,'packages/desktop/main.mjs'),...process.argv.slice(2)],{cwd:root,env,windowsHide:true,stdio:'inherit'});
+child.on('error',e=>{console.error(e.message);process.exitCode=1;});child.on('exit',code=>{process.exitCode=code??1;});

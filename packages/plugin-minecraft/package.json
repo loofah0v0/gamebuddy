@@ -1,0 +1,23 @@
+{
+  "name": "@gameguy/minecraft",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "skills",
+    "worker"
+  ],
+  "dependencies": {
+    "zod": "4.3.6",
+    "@gameguy/core": "0.1.0",
+    "mineflayer": "4.39.0",
+    "mineflayer-pathfinder": "2.4.5"
+  }
+}

@@ -1,0 +1,12 @@
+import {runProfile} from '@deepseek-ai/dsh/profile-boot';
+import {createLaunchEnvironmentSnapshot} from '@deepseek-ai/dsh-launch-environment';
+import {mkdtemp,writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+const dir=await mkdtemp(join(tmpdir(),'gameguy-kernel-'));
+process.env.DSH_HOME=dir;
+const patch=join(dir,'overlay.json');
+await writeFile(patch,JSON.stringify(['sdk-app-startup','sdk-jsonrpc-server','persistent-pwsh','persistent-bash','tool-fs','tool-working-directory'].map(id=>({id,disabled:true}))));
+const {ctx,shutdown}=await runProfile({environment:createLaunchEnvironmentSnapshot([{source:'process',values:process.env}]),profile:'sdk-minimal',patchFiles:[patch],args:[]});
+console.log('KERNEL',!!ctx.agents,!!ctx.tools,!!ctx.sessions);
+await shutdown.shutdown(0);
