@@ -18,7 +18,7 @@
 | 开发/外部运行时 | Node 24.18.0 / Python 3.12.10 | 外部 Node 运行 DSH / Python MaaCore worker | 不假定 Electron 内置 Node 可替代 DSH 的 Node 24 |
 | 构建与校验 | TS 5.9.3 / tsx 4.20.6 / esbuild 0.25.11 / zod 4.3.6 | TypeScript、测试、bundle、严格 schema | 锁文件固定解析；发布前完整许可证/漏洞审查 |
 
-GameGuy 根包为 private，尚未选定自身公开许可证，不做公开发布。主窗口使用固定版 DSH 原生 web profile、renderer/Slot 模块与 `@gameguy/native-client` 产品扩展；GameGuy 自有 Electron 负责桌面桥、安全与产品入口。旧自有 UI 保留为辅助游戏中心，SDK 支路保留回归。复用基础客户端不等于要求用户安装到原版 DSH Desktop。
+GameGuy 根包为 private，尚未选定自身公开许可证，不做公开发布。主窗口使用固定版 DSH 原生 web profile、renderer/Slot 模块与 `@gameguy/native-client` 产品扩展；GameGuy 自有 Electron 负责桌面桥、安全与产品入口。旧自有 UI 用于初始化失败恢复和兼容回归，SDK 支路保留回归。复用基础客户端不等于要求用户安装到原版 DSH Desktop。
 
 ### Windows Electron 运行路径
 
@@ -63,7 +63,7 @@ GameGuy 根包为 private，尚未选定自身公开许可证，不做公开发�
 
 ## 4. QA 依赖与历史测试
 
-当前主窗口由 `verify:native-desktop` 经与正式入口相同的运行时解析器启动校验后的同版本 Electron，使用隔离 userdata、本地 SSE 和 HTTP 页面夹具。`verify:desktop`、`verify:model`、`verify:session-model` 的桌面段保留辅助游戏中心/SDK 支路合同；`verify:product` 使用实际 DSH + 本地 SSE 模型夹具。不需要外部 Playwright/Edge，不使用用户浏览器/游戏登录态，不调用付费模型。
+当前主窗口由 `verify:native-desktop` 经与正式入口相同的运行时解析器启动校验后的同版本 Electron，使用隔离 userdata、本地 SSE 和 HTTP 页面夹具。`verify:desktop`、`verify:model`、`verify:session-model` 的桌面段保留旧恢复界面/SDK 支路合同；`verify:product` 使用实际 DSH + 本地 SSE 模型夹具。不需要外部 Playwright/Edge，不使用用户浏览器/游戏登录态，不调用付费模型。
 
 旧 `legacy:*` UI 测试曾使用外部 Playwright、Edge 155.0.4283.62；不作为当前产品运行/安装要求。原生 renderer/slots 则是当前主工作台的实际运行模块。
 

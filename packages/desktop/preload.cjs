@@ -1,5 +1,5 @@
 const {contextBridge,ipcRenderer,webUtils}=require('electron');
-const actions=new Set(['game-center','session-focus','session-models','session-model','state','create','message','permission','stop','question-answer','approval','capture','privacy','plugin-install','plugin-disable','schedule','tool','model','model-discover','model-verify','spectator','spectator-hide','spectator-external','restart','retry-native','quit']);
+const actions=new Set(['session-focus','session-models','session-model','state','create','message','permission','stop','question-answer','approval','capture','privacy','plugin-install','plugin-disable','schedule','tool','model','model-discover','model-verify','spectator','spectator-hide','spectator-external','restart','retry-native','quit']);
 contextBridge.exposeInMainWorld('gameguy',Object.freeze({
  invoke:async(action,input={})=>{if(!actions.has(action))throw Error('Unsupported action');const result=await ipcRenderer.invoke('gameguy:invoke',action,input);if(!result.ok)throw Error(result.error);return result.value;},
  onNavigate:fn=>{const listener=(_e,value)=>fn(value);ipcRenderer.on('gameguy:navigate',listener);return()=>ipcRenderer.removeListener('gameguy:navigate',listener);},

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {mkdir,writeFile,readFile,rm,realpath} from 'node:fs/promises';
 import {join,relative,isAbsolute,resolve} from 'node:path';
-export async function runNativeSmoke(win,service,root,dataDir,vault,openGameCenter){
+export async function runNativeSmoke(win,service,root,dataDir,vault){
  const out=join(root,'artifacts/verification/native-desktop');await mkdir(out,{recursive:true});
  const startedAt=new Date().toISOString();
  const errors=[],checks=[];win.webContents.on('console-message',e=>{if(e.level==='error')errors.push(e.message);});
@@ -128,7 +128,7 @@ export async function runNativeSmoke(win,service,root,dataDir,vault,openGameCent
  await click('通用设置');await click('深色');await capture('theme-dark');await click('浅色');
  check('Theme controls and global permission defaults are reachable',await evaluate("document.querySelector('[data-shortcut-modal=settings]').innerText.includes('选择新会话的默认权限模式')"));
  await click('编辑快捷键');await wait("document.body.innerText.includes('快捷键')");await capture('shortcuts');await escape();
- // Native provider settings are a separate surface from the game-center shortcut.
+ // Native provider settings remain independent of game management.
  await click('模型');await wait("document.querySelector('[data-shortcut-modal=settings]').innerText.includes('添加模型提供商')");
  await click('添加模型提供商');await click('自定义模型 API');await wait("!!document.querySelector('input[aria-label=\"Provider ID\"]')");
  await fill('Provider ID','qa-provider');await fill('显示名称','QA Provider');await fill('API 地址',process.env.GAMEGUY_MODEL_FIXTURE_URL);await fill('API 密钥','local-native-provider-not-real');
@@ -182,7 +182,10 @@ export async function runNativeSmoke(win,service,root,dataDir,vault,openGameCent
  await wait("document.body.innerText.includes('GAMEGUY_NATIVE_FILE_PREVIEW_OK')");await capture('file-preview');check('File tree opens real file content in native preview',true);
  await click('新标签页');await wait("!!document.querySelector('[data-sidebar-right-guide-entry=terminal]')");await evaluate("(()=>{const n=document.querySelector('[data-sidebar-right-guide-entry=terminal]');(n.matches('button')?n:n.querySelector('button')).click();})()");await wait("!!document.querySelector('[data-sidebar-terminal] .xterm-helper-textarea')");await capture('terminal');await evaluate("document.querySelector('[data-sidebar-terminal] .xterm-helper-textarea').focus()");win.webContents.insertText("echo GG_NATIVE_TERMINAL_%OS%");win.webContents.sendInputEvent({type:'keyDown',keyCode:'ENTER'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'ENTER'});await wait("document.querySelector('[data-sidebar-terminal]').innerText.includes('GG_NATIVE_TERMINAL_Windows_NT')");await capture('terminal-output');check('Native terminal executes harmless command and renders output',true);
  await click('游戏市场');await wait("!!document.querySelector('.gg-market')");await click('通用 Agent 扩展 ↗');await wait("document.body.innerText.includes('添加插件')");await capture('plugins');check('Native general plugin manager is available',!await evaluate("document.body.innerText.includes('本部署没有可管理的 profile')"));
- const center=await openGameCenter();assert.notEqual(center.webContents.id,win.webContents.id);assert.equal(await center.webContents.executeJavaScript('window.gameguy.invoke("state").then(s=>s.nativeClient)'),true);center.close();
+ const {BrowserWindow,Menu}=await import('electron');
+ check('No obsolete green game-center window or menu entry',BrowserWindow.getAllWindows().length===1&&!Menu.getApplicationMenu().items.some(item=>item.submenu?.items.some(child=>child.label==='游戏中心')));
+ check('Old game-center IPC action is unavailable',await evaluate('window.gameguy.invoke("game-center").then(()=>false,()=>true)'));
+ check('No obsolete game-center sidebar button',!await evaluate("document.body.innerText.includes('🎮 游戏中心')"));
  check('No games or schedules executed',service.snapshot().runs.length===0&&service.snapshot().schedules.schedules.length===0);check('No renderer errors',errors.length===0);await writeFile(join(out,'report.json'),JSON.stringify({status:'passed',startedAt,completedAt:new Date().toISOString(),checks,isolatedUserData:true,realModelRequests:0,realGameActions:0},null,2));for(const name of ['failure.png','failure.txt','failure.html'])await rm(join(out,name),{force:true});console.log('NATIVE SMOKE PASSED',checks);
  }catch(e){await writeFile(join(out,'report.json'),JSON.stringify({status:'failed',startedAt,completedAt:new Date().toISOString(),checks,error:e.stack,isolatedUserData:true},null,2));await capture('failure');throw e;}finally{await writeFile(join(out,'errors.json'),JSON.stringify(errors,null,2));}
 }

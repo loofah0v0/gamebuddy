@@ -23,7 +23,7 @@ app.setPath('userData',process.env.GAMEGUY_TEST_DATA||join(app.getPath('appData'
 const dataDir=app.getPath('userData'),keyFile=join(dataDir,'credentials.bin');
 const uiURL=new URL('../ui/index.html',import.meta.url).href;
 const nativeClient=!smokeMode||nativeSmokeMode||marketSmokeMode||homeSmokeMode;
-let nativeOrigin,vault,center,spectatorOwner,shortcuts;
+let nativeOrigin,vault,spectatorOwner,shortcuts;
 const browserGuests=new GameGuyBrowserGuests(()=>nativeOrigin);
 let modelSaveTail=Promise.resolve();
 let initialization,win,service,ready=false,initError='',quitting=false,quitPending=false,tray,spectator,spectatorTask,spectatorAddress;
@@ -41,7 +41,7 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
    shortcuts?.fileMenu({fileMenu:'文件',closePage:'关闭当前页面'})??{label:'文件',submenu:[]},
    {label:'编辑',submenu:[{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'}]},
    {label:'视图',submenu:[{role:'resetZoom'},{role:'zoomIn'},{role:'zoomOut'},{role:'togglefullscreen'}]},
-   {label:'GameBuddy',submenu:[{label:'游戏中心',click:()=>void openGameCenter()},{label:'退出',click:()=>void requestQuit()}]}
+   {label:'GameBuddy',submenu:[{label:'退出',click:()=>void requestQuit()}]}
   ]));
   shortcuts=installGameGuyShortcuts(()=>win,dataDir,process.platform==='win32'?'windows':process.platform==='darwin'?'macos':'linux',updateMenu,()=>({revision:0,blocked:false}),trustedURL);
   shortcuts.attach(win);updateMenu();
@@ -57,8 +57,8 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
  win.once('ready-to-show',()=>win.show());
  const icon=nativeImage.createFromPath(join(root,'assets/gameguy.png'));
  tray=new Tray(icon);tray.setToolTip('GameBuddy · 本地服务');tray.setContextMenu(Menu.buildFromTemplate([{label:'打开 GameBuddy',click:()=>{win.show();win.focus();}},{label:'退出 GameBuddy',click:()=>void requestQuit()}]));tray.on('double-click',()=>{win.show();win.focus();});
- const notify=()=>{for(const w of [win,center])if(w&&!w.isDestroyed())w.webContents.send('gameguy:refresh');};
- const assertSender=e=>{if(![win,center].some(w=>w&&!w.isDestroyed()&&e.sender===w.webContents)||e.senderFrame!==e.sender.mainFrame||!trustedURL(e.senderFrame.url))throw Error('Untrusted IPC sender');};
+ const notify=()=>{if(win&&!win.isDestroyed())win.webContents.send('gameguy:refresh');};
+ const assertSender=e=>{if(!win||win.isDestroyed()||e.sender!==win.webContents||e.senderFrame!==e.sender.mainFrame||!trustedURL(e.senderFrame.url))throw Error('Untrusted IPC sender');};
  ipcMain.on('gameguy:theme-source',(e,value)=>{try{assertSender(e);if(e.sender===win.webContents&&['system','light','dark'].includes(value))nativeTheme.themeSource=value;}catch{}});
  const fullscreen=()=>win.webContents.send('gameguy:fullscreen',win.isFullScreen());
  win.on('enter-full-screen',fullscreen);win.on('leave-full-screen',fullscreen);win.webContents.on('did-finish-load',fullscreen);
@@ -74,7 +74,6 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
  if(!ready)throw Error('应用服务仍在初始化，请稍后重试');
  const owner=BrowserWindow.fromWebContents(e.sender);let value;
  switch(action){
- case 'game-center':await openGameCenter(a.sessionId);value={status:'opened'};break;
  case 'session-focus':if(!nativeClient)throw Error('Native client unavailable');win.show();win.focus();win.webContents.send('gameguy:navigate',{sessionId:a.sessionId,prompt:typeof a.prompt==='string'?a.prompt.slice(0,20000):undefined});value={status:'focused'};break;
  case 'create':value=await service.create(a);break;
  case 'message':value=await service.message(a.taskId,a.text);break;
@@ -132,7 +131,7 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
  if(smokeMode){
   console.log('[desktop-smoke] service initialized',ready,initError);
   let code=0;
-  try{if(!ready||initError)throw Error(initError||'GameBuddy service not ready');if(homeSmokeMode){const {runHomeSmoke}=await import('./home-smoke.mjs');await runHomeSmoke(win,service,root,dataDir,vault);}else if(marketSmokeMode){const {runNativeMarketSmoke}=await import('./market-smoke.mjs');await runNativeMarketSmoke(win,service,root);}else if(nativeSmokeMode){const {runNativeSmoke}=await import('./native-smoke.mjs');await runNativeSmoke(win,service,root,dataDir,vault,openGameCenter);}else if(sessionModelSmokeMode){const {runSessionModelSmoke}=await import('./session-model-smoke.mjs');await runSessionModelSmoke(win,service,root);}else if(modelSmokeMode){const {runModelSmoke}=await import('./model-smoke.mjs');await runModelSmoke(win,service,root,dataDir,loadKey);}else{const {runDesktopSmoke}=await import('./smoke.mjs');await runDesktopSmoke(win,service,root);}}
+  try{if(!ready||initError)throw Error(initError||'GameBuddy service not ready');if(homeSmokeMode){const {runHomeSmoke}=await import('./home-smoke.mjs');await runHomeSmoke(win,service,root,dataDir,vault);}else if(marketSmokeMode){const {runNativeMarketSmoke}=await import('./market-smoke.mjs');await runNativeMarketSmoke(win,service,root);}else if(nativeSmokeMode){const {runNativeSmoke}=await import('./native-smoke.mjs');await runNativeSmoke(win,service,root,dataDir,vault);}else if(sessionModelSmokeMode){const {runSessionModelSmoke}=await import('./session-model-smoke.mjs');await runSessionModelSmoke(win,service,root);}else if(modelSmokeMode){const {runModelSmoke}=await import('./model-smoke.mjs');await runModelSmoke(win,service,root,dataDir,loadKey);}else{const {runDesktopSmoke}=await import('./smoke.mjs');await runDesktopSmoke(win,service,root);}}
   catch(error){console.error(error);code=1;}
   finally{quitting=true;hideSpectator();try{await service?.close();}catch(error){console.error(error);code=1;}shortcuts?.dispose();tray?.destroy();app.exit(code);}
  }
@@ -141,7 +140,7 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
 void boot().catch(error=>{console.error(error);app.exit(1);});
 async function loadKey(){try{if(!safeStorage.isEncryptionAvailable())return '';return safeStorage.decryptString(await readFile(keyFile));}catch(e){if(e.code==='ENOENT')return '';initError='凭据解密失败，请重新保存模型密钥';return '';}}
 function hideSpectator(){if(spectator){if(spectatorOwner&&!spectatorOwner.isDestroyed())spectatorOwner.contentView.removeChildView(spectator);spectatorOwner=null;spectator.webContents.close();spectator=null;spectatorTask=null;spectatorAddress=null;}}
-function notifyPreview(error){for(const w of [win,center])if(w&&!w.isDestroyed())w.webContents.send('gameguy:preview-error',error);}
+function notifyPreview(error){if(win&&!win.isDestroyed())win.webContents.send('gameguy:preview-error',error);}
 async function requestQuit(relaunch=false){if(quitting||quitPending)return;quitPending=true;await initialization;const active=ready&&(service.snapshot().tasks.some(t=>['thinking','approval','running','stopping','unknown'].includes(t.status))||service.monitor.active.size||service.monitor.pending.size);
  if(active){const r=await dialog.showMessageBox(win,{type:'warning',buttons:['取消','停止任务并退出'],defaultId:0,cancelId:0,message:'退出会停止 GameBuddy 自动执行',detail:'已发生的游戏动作不能撤销；停止龙虾杀进程不代表远端已退出。'});if(r.response!==1){quitPending=false;return;}}
  quitting=true;hideSpectator();try{if(service)await service.close();}catch(e){quitting=false;quitPending=false;await dialog.showMessageBox(win,{type:'error',message:'停止服务遇到错误',detail:'自动执行状态未知，请检查日志。'+e.message});return;}shortcuts?.dispose();tray?.destroy();if(relaunch)app.relaunch();app.quit();}
@@ -157,19 +156,6 @@ function installExternalLinks(owner){
   return {action:'deny'};
  });
 }
-function secureWindow(w){
- installExternalLinks(w);
- for(const event of ['will-navigate','will-redirect'])w.webContents.on(event,(e,url)=>{if(!trustedURL(url))e.preventDefault();});
- w.webContents.session.setPermissionRequestHandler((_wc,_p,cb)=>cb(false));w.webContents.session.setPermissionCheckHandler(()=>false);
- w.on('resize',()=>{if(spectatorOwner===w)hideSpectator();w.webContents.send('gameguy:refresh');});
-}
-async function openGameCenter(sessionId){
- if(!center||center.isDestroyed()){
- center=new BrowserWindow({width:1300,height:900,minWidth:1080,minHeight:720,title:'GameBuddy · 游戏中心',icon:join(root,'assets/gameguy.png'),show:false,webPreferences:{preload:join(import.meta.dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,webSecurity:true}});
- secureWindow(center);center.on('closed',()=>{if(spectatorOwner===center)hideSpectator();center=null;});await center.loadURL(uiURL);
- }center.show();center.focus();if(sessionId)center.webContents.send('gameguy:navigate',{sessionId});return center;
-}
-
 async function loadNative(){
  const url=service.runtimeBoot?.nativeURL;
  try{

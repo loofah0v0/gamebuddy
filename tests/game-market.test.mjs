@@ -63,3 +63,9 @@ test('runtime synchronization failure rolls back enablement and persisted state'
 });
 
 test('advanced gateway metadata is owned by its actual package, not blindly re-exported',async()=>{const {TYPERT}=await import('../packages/agent-extensions/typert.mjs');assert.equal(TYPERT.package,'@gameguy/agent-extensions');const remote=await readFile(join(root,'packages/agent-extensions/remote.mjs'),'utf8');assert(remote.includes('@gameguy/agent-extensions#pluginRegistryProbe'));assert(!remote.includes('@deepseek-ai/dsh-client-ui-plugin-manager#'));});
+
+test('market stays in the main window without obsolete green center',async()=>{
+ const [main,preload,client]=await Promise.all(['packages/desktop/main.mjs','packages/desktop/preload.cjs','packages/native-client/client.js'].map(path=>readFile(join(root,path),'utf8')));
+ assert(!main.includes('openGameCenter'));assert(!main.includes("case 'game-center'"));assert(!preload.includes("'game-center'"));assert(!client.includes('🎮 游戏中心'));
+ for(const label of ['游戏与设备','定时计划','API 验证'])assert(client.includes(label));
+});

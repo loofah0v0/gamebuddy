@@ -122,7 +122,7 @@ flowchart TB
   MC --> SV[授权 Minecraft 私人服]
   S --> C[Monitor → 官方 ccl 子进程]
   C --> CL[龙虾杀官方服务]
-  S --> GW[辅助游戏中心窗口]
+  R --> GW[主窗口游戏市场 / 设备 / 计划 / API 验证]
   P --> B[隔离浏览器 / 人类专用观战容器]
 ```
 
@@ -147,7 +147,7 @@ flowchart TB
 | [desktop](packages/desktop/main.mjs) | Electron 生命周期、单实例、托盘、可信窗口/IPC、凭据、目录选择、快捷键、browser guests、官方观战 | 不理解 MAA 的关卡/干员/任务参数 |
 | [native-client](packages/native-client/client.js) | 正式 Slot 上的品牌、首页、游戏市场、右侧游戏现场；连接原生会话和桌面桥 | 不替换原生编辑器、模型选择器或 Agent loop |
 | [agent-extensions](packages/agent-extensions/index.mjs) | 固定版通用插件管理页面的产品级适配，作为高级入口保留通用扩展能力 | 不是游戏市场后端；不改上游 checkout/node_modules |
-| [ui](packages/ui/index.html) | 辅助游戏中心、设备/配置/日程、模型目录/API 快捷验证；初始化失败时显示状态 | 不是生产主聊天工作台 |
+| [ui](packages/ui/index.html) | 初始化失败时的恢复界面及旧版兼容测试 | 不是生产主聊天工作台或独立游戏中心 |
 | [app-service](packages/app-service/index.mjs) | task↔原生 session 绑定、业务工具入口、根 Agent 归属、实时权限、审批/问答、插件生命周期、模型快捷配置、事件/结果唤醒 | 不自行推理玩家目标；游戏计划语义交给插件 |
 | [runtime-dsh](packages/runtime-dsh/worker.mjs) | boot 原生 profile、LLM 和原生工具；注册产品身份/Skills/业务工具；session adoption、事件、模型和权限桥；SDK 兼容支路 | 不另造一套简化模型轮询循环 |
 | [core](packages/core/src/engine.ts) | `GamePlugin` 合同、实例/设备互斥、运行状态、deadline/AbortSignal、截图隐私、持久化和清理 | 不含游戏专属策略；不保证任意脚本也受管理 |
@@ -172,7 +172,7 @@ Start-GameBuddy.cmd / npm start
   → runtime-dsh/index.mjs：使用外部 Node fork worker.mjs
   → prepareNativeProfile + runProfile(web)：原生 Host / Agent / tools / session
   → 同步已启用游戏 Skills，返回 authenticated nativeURL
-  → Electron 主窗口加载原生工作台；辅助游戏中心按需打开
+  → Electron 主窗口加载工作台，游戏市场及管理入口在主窗口内
 ```
 
 - **框架基底**：固定 DeepSeek Harness **0.2.1-rc.2** 的 web/base profile 和客户端模块。参考 checkout `D:/Gameguy/dsh` 只读；生产入口在自有 desktop，不从该 checkout 启动上游 Desktop。
@@ -339,7 +339,7 @@ Buddy 可以自己写缺少的脚本、检查日志和运行测试，但**脚本
 
 - **原生设置**支持多提供商、协议和凭据，并拥有可编辑 profile；不需要为每次原生在线设置更改重启 Host。
 - **输入框模型选择器**切换当前会话的下次请求，历史保留、在途请求不变；推理强度按 adapter 元数据提供，不猜测模型 ID 或 effort。
-- **游戏中心快捷配置**提供“获取可用模型 / 验证 API”，只管理兼容产品路由（内部显示名仍可能为 `GameGuy API`），不覆盖其他原生提供商。快捷保存要求活动任务先停止，并带失败恢复逻辑。
+- **游戏市场 → API 验证**支持临时获取模型目录和验证 API，不保存配置、不修改会话模型。要添加或保存提供商，请使用主窗口“设置 → 模型”；旧恢复界面仍保留兼容快捷配置。
 - 获取模型目录不等于推理成功。API 验证发送一个小文本请求，可能产生费用；目录接口缺失时可填写提供商真实 ID。当前确定性端到端协议重点为 OpenAI completions，不保证所有协议/真实提供商都已验收。
 - 原生凭据保存在主进程 `native-credentials.bin`，快捷路由兼容文件为 `credentials.bin`，均用 Electron safeStorage 加密；没有明文保存回退。凭据在调用时必须进入本机进程/模型请求，加密落盘不代表内存、会话或所有日志都无敏感信息。
 
@@ -374,7 +374,7 @@ D:/Gameguy/
 │  ├─ desktop/                   Electron 主进程、桥、凭据和隔离浏览器
 │  ├─ native-client/             主工作台产品 UI / 原生凭据桥
 │  ├─ agent-extensions/          通用扩展页适配产物
-│  ├─ ui/                        辅助游戏中心
+│  ├─ ui/                        初始化恢复界面及兼容测试
 │  ├─ app-service/               task、工具入口、市场、Monitor、存储、模型
 │  ├─ runtime-dsh/               profile、worker、身份、会话/权限/模型桥
 │  ├─ core/src/                  Engine / 合同 / 进程工具

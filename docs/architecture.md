@@ -20,14 +20,14 @@ GameGuy Electron + native-client 产品适配
  │   ├─ MAA 插件 → Python MaaCore worker → ADB / 外部 MuMu
  │   ├─ Mineflayer 插件 → 当前进程内执行（独立 worker 待实现）
  │   └─ 官方 Claw Skill / ccl → 原生权限 + 长进程 Monitor
- └─ 游戏中心辅助窗口：可信游戏包、设备、配置、日程、API 验证
+ └─ 主窗口游戏市场内：可信游戏包、设备、日程、临时 API 验证
 ```
 
 `Start-GameGuy.cmd` / `npm start` 经 `scripts/launch-product.mjs` 启动自有 `packages/desktop/main.mjs`。主 UI 复用原生客户端模块，不是启动原版 Desktop，不要求另开浏览器，也不是把 GameGuy 作为上游插件产品交付。自有 native-client 模块是内部组合方式。
 
 ### 1.1 桌面安全与启动
 
-保留 contextIsolation/sandbox/webSecurity，禁用 Node integration。原生 sidebar-browser 使用 MIT 适配的 guest leases、workspace partition；只允许租约内 guest，不附 preload/应用桥，阻止访问应用 Host。可信 IPC 限定主/辅助窗口的可信主 frame。原生导出经用户保存对话框；guest 不获应用写入桥。系统浏览器打开过滤 HTTP(S)、控制字符、凭据与应用自身来源。
+保留 contextIsolation/sandbox/webSecurity，禁用 Node integration。原生 sidebar-browser 使用 MIT 适配的 guest leases、workspace partition；只允许租约内 guest，不附 preload/应用桥，阻止访问应用 Host。可信 IPC 限定主窗口的可信主 frame。原生导出经用户保存对话框；guest 不获应用写入桥。系统浏览器打开过滤 HTTP(S)、控制字符、凭据与应用自身来源。
 
 目录选择、拖入文件路径、fullscreen、theme 和 keyboard/keybindings 与原生客户端协议对接。改写范围见第三方声明，上游源码不修改。
 
@@ -53,13 +53,13 @@ native API 转发 create/list/inspect/rename/search/fork/selectModel/modelCatalo
 
 原生 credentials 通过主进程 safeStorage vault，串行/原子写、拒绝不合法引用/原型键/过大输入，无明文 fallback。兼容 Key 与 DeepSeek Key 分离，未配置搜索 provider 时准确失败。官方账号/遥测不是通用能力依赖，故意不接。
 
-游戏中心的 URL/目录/小型推理验证仅管理 GameGuy API 路由，不覆盖其他 provider。saveModel 有活动任务 admission、native 默认模型保存与配置更新；快捷 key/profile 两阶段提交及失败回滚。SDK 旧支路仍使用其重启机制。快捷推理验证独立 POST completions，目录 GET models，不发历史/工具；草稿变化使旧结果失效。原生其它协议未被这份本地 completions QA 自动证明。
+主窗口游戏市场的临时 API 验证支持目录及小型推理探测，不保存 provider 或修改会话模型；保存请用原生设置。旧恢复界面仍保留兼容快捷路由；其 saveModel 有活动任务 admission、native 默认模型保存与配置更新，快捷 key/profile 两阶段提交及失败回滚。探测独立 POST completions，目录 GET models，不发历史/工具；草稿变化使旧结果失效。原生其它协议未被这份本地 completions QA 自动证明。
 
 ### 2.3 权限、游戏画面与边界
 
 原生三档、Windows shell 围栏、单次授权、全局默认与会话 UI 保留。GameGuy 游戏配置/执行/消费/日程 approvals 独立，不因完全访问跳过。文件读取不是秘密隔离，宿主插件/Monitor 不在工具沙箱，自写 shell 无法仅由游戏 schema 保证资源/取消约束。
 
-同 session 游戏现场使用原生 `useTabInfo().tab.visible`，隐藏/收起的已挂载 tab 不采集也不展示观战覆盖层。MAA 截图仅可见、非隐私且已绑定时尝试，间隔至少约 7 秒；辅助游戏中心仍约 3 秒。异步采集的成功、错误与 finally 都检查 session/task，避免结果污染新会话。这不是视频/原生 MuMu 嵌入或自动视觉控制。Claw 官方网页用隔离容器，按 tab、viewport 与 dock 裁剪；隐藏、隐私或原生模态对话框出现时隐藏覆盖层。Minecraft 为结构化状态。辅助游戏中心发送目标只填原生草稿，不自动调用模型。
+同 session 游戏现场使用原生 `useTabInfo().tab.visible`，隐藏/收起的已挂载 tab 不采集也不展示观战覆盖层。MAA 截图仅可见、非隐私且已绑定时尝试，间隔至少约 7 秒。异步采集的成功、错误与 finally 都检查 session/task，避免结果污染新会话。这不是视频/原生 MuMu 嵌入或自动视觉控制。Claw 官方网页用隔离容器，按 tab、viewport 与 dock 裁剪；隐藏、隐私或原生模态对话框出现时隐藏覆盖层。Minecraft 为结构化状态。游戏市场发送目标只填原生草稿，不自动调用模型。
 
 隐私暂停先在客户端锁定、清除画面并同步隐藏宿主观战容器，再等待服务停止；应用服务先置私密并递增 capture epoch，串行化隐私变更。采集前后检查 epoch、实例绑定、私密/过渡状态，即使暂停后立即恢复也不接受旧帧；暂停过渡期间新执行（含 schedule）被阻断。无实例通用/Claw 任务同样支持暂停。失败暂停保持私密；恢复失败保持私密，后端已恢复但持久化失败则回滚，回滚不确定报告两项错误且任务仍保持阻断。恢复预览不会重新启动已停止任务。上述仅约束受管理路径，不回收历史资料或封锁其他通用截图工具。
 
