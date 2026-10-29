@@ -19,8 +19,8 @@ export async function runDesktopSmoke(win,service,root){
  check('GameBuddy preload bridge without require',await evaluate('Boolean(window.gameguy) && typeof window.require === "undefined"'));
  check('Own 3-column workspace and 3 game goals',await evaluate('!!document.querySelector(".sidebar") && !!document.querySelector("main") && !!document.querySelector(".preview") && document.querySelectorAll(".game-card").length===3'));
  await shot('home');
- await click('[data-page="plugins"]');await wait('document.getElementById("title").textContent.includes("Skills")');
- check('Two GameBuddy plugins plus original Skill',await evaluate('document.querySelectorAll(".list-card").length===3 && document.getElementById("content").textContent.includes("没有第三个")'));
+ await click('[data-page="plugins"]');await wait('document.getElementById("title").textContent==="游戏市场"');
+ check('Three game packages plus the official Skill explanation',await evaluate('document.querySelectorAll(".list-card").length===4 && document.getElementById("content").textContent.includes("龙虾杀 · 官方 Skill")'));
  await shot('plugins');
  await click('[data-page="devices"]');await wait('document.getElementById("title").textContent === "游戏与设备"');
  check('Device page explains external emulator / ADB preview',await evaluate('document.getElementById("content").textContent.includes("ADB")'));

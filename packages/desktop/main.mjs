@@ -16,13 +16,16 @@ const sessionModelSmokeMode=process.argv.includes('--smoke-session-model');
 const homeSmokeMode=process.argv.includes('--smoke-home');
 const marketSmokeMode=process.argv.includes('--smoke-market');
 const nativeSmokeMode=process.argv.includes('--smoke-native');
-const smokeMode=homeSmokeMode||marketSmokeMode||nativeSmokeMode||process.argv.includes('--smoke-product')||modelSmokeMode||sessionModelSmokeMode;
+const startupSmokeMode=process.argv.includes('--smoke-startup');
+const smokeMode=homeSmokeMode||marketSmokeMode||nativeSmokeMode||startupSmokeMode||process.argv.includes('--smoke-product')||modelSmokeMode||sessionModelSmokeMode;
 if(smokeMode&&(!process.env.GAMEGUY_TEST_DATA||resolve(dirname(process.env.GAMEGUY_TEST_DATA))!==resolve(tmpdir())||!basename(process.env.GAMEGUY_TEST_DATA).startsWith('gameguy-desktop-smoke-')))throw Error('Desktop smoke requires isolated temporary user data');
 app.setName('GameBuddy');
 app.setPath('userData',process.env.GAMEGUY_TEST_DATA||join(app.getPath('appData'),'GameGuy-v03'));
 const dataDir=app.getPath('userData'),keyFile=join(dataDir,'credentials.bin');
-const uiURL=new URL('../ui/index.html',import.meta.url).href;
-const nativeClient=!smokeMode||nativeSmokeMode||marketSmokeMode||homeSmokeMode;
+// The old UI is loaded only by explicit, isolated compatibility tests.
+const legacyUIURL=new URL('../ui/index.html',import.meta.url).href;
+const startupURL=new URL('./startup.html',import.meta.url).href;
+const nativeClient=!smokeMode||nativeSmokeMode||marketSmokeMode||homeSmokeMode||startupSmokeMode;
 let nativeOrigin,vault,spectatorOwner,shortcuts;
 const browserGuests=new GameGuyBrowserGuests(()=>nativeOrigin);
 let modelSaveTail=Promise.resolve();
@@ -69,7 +72,7 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
  win.webContents.session.on('will-download',(event,item,contents)=>{if(contents!==win.webContents||!trustedURL(contents.getURL())){event.preventDefault();return;}const file=dialog.showSaveDialogSync(win,{title:'GameBuddy · 保存文件',defaultPath:basename(item.getFilename())});if(!file){event.preventDefault();return;}item.setSavePath(file);});
  ipcMain.handle('gameguy:invoke',async(e,action,a={})=>{try{assertSender(e);if(action==='state')return ready?{ok:true,value:{...service.snapshot(),...(initError?{startupError:initError}:{})}}:{ok:true,value:{brand:'GameBuddy',loading:!initError,startupError:initError}};
  if(action==='restart'){if(!initError)throw Error('仅初始化失败时允许重启；内核重试请保存模型配置');await requestQuit(true);return {ok:true,value:{status:quitting?'restart-requested':'cancelled'}};}
- if(action==='retry-native'){if(!ready||!nativeClient)throw Error('请等待服务初始化或重新启动应用');await loadNative();return {ok:true,value:{status:'ready'}};}
+ if(action==='retry-native'){if(!ready||!nativeClient)throw Error('请等待服务初始化或重新启动应用');await loadNative();initError='';return {ok:true,value:{status:'ready'}};}
  if(action==='quit'){void requestQuit();return {ok:true,value:{status:'requested'}};}
  if(!ready)throw Error('应用服务仍在初始化，请稍后重试');
  const owner=BrowserWindow.fromWebContents(e.sender);let value;
@@ -126,12 +129,12 @@ if(!app.requestSingleInstanceLock()){app.quit();}else{
  }
  return {ok:true,value};
  }catch(err){return {ok:false,error:err.message};}});
- initialization=(async()=>{if(smokeMode)console.log('[desktop-smoke] loading UI');await win.loadURL(uiURL);if(smokeMode)console.log('[desktop-smoke] initializing service');if(quitting)return;vault=new CredentialVault(dataDir,safeStorage);service=new GameGuyService({root,dataDir,nativeClient,onCredential:(action,input)=>vault.request(action,input)});service.on('changed',notify);try{const legacyKey=await loadKey();if(nativeClient&&legacyKey){const config=JSON.parse(await readFile(join(dataDir,'model.json'),'utf8').catch(()=>'{"provider":"deepseek"}'));const ref=config.provider==='compatible'?'GAMEGUY_MODEL_KEY':'DEEPSEEK_API_KEY';if(!await vault.request('get',{ref}))await vault.request('set',{ref,value:legacyKey});}await service.init(legacyKey);if(initError)service.startupError=initError;ready=true;if(nativeClient){await loadNative();}}catch(e){initError=e.message;}notify();})();
+ initialization=(async()=>{if(smokeMode)console.log('[desktop-smoke] loading UI');await win.loadURL(nativeClient?startupURL:legacyUIURL);if(startupSmokeMode){const {runStartupLoadingSmoke}=await import('./startup-smoke.mjs');await runStartupLoadingSmoke(win,root,startupURL);}if(smokeMode)console.log('[desktop-smoke] initializing service');if(quitting)return;vault=new CredentialVault(dataDir,safeStorage);service=new GameGuyService({root,dataDir,nativeClient,onCredential:(action,input)=>vault.request(action,input)});service.on('changed',notify);try{const legacyKey=await loadKey();if(nativeClient&&legacyKey){const config=JSON.parse(await readFile(join(dataDir,'model.json'),'utf8').catch(()=>'{"provider":"deepseek"}'));const ref=config.provider==='compatible'?'GAMEGUY_MODEL_KEY':'DEEPSEEK_API_KEY';if(!await vault.request('get',{ref}))await vault.request('set',{ref,value:legacyKey});}await service.init(legacyKey);if(initError)service.startupError=initError;ready=true;if(nativeClient){await loadNative();}}catch(e){initError=e.message;}notify();})();
  await initialization;
  if(smokeMode){
   console.log('[desktop-smoke] service initialized',ready,initError);
   let code=0;
-  try{if(!ready||initError)throw Error(initError||'GameBuddy service not ready');if(homeSmokeMode){const {runHomeSmoke}=await import('./home-smoke.mjs');await runHomeSmoke(win,service,root,dataDir,vault);}else if(marketSmokeMode){const {runNativeMarketSmoke}=await import('./market-smoke.mjs');await runNativeMarketSmoke(win,service,root);}else if(nativeSmokeMode){const {runNativeSmoke}=await import('./native-smoke.mjs');await runNativeSmoke(win,service,root,dataDir,vault);}else if(sessionModelSmokeMode){const {runSessionModelSmoke}=await import('./session-model-smoke.mjs');await runSessionModelSmoke(win,service,root);}else if(modelSmokeMode){const {runModelSmoke}=await import('./model-smoke.mjs');await runModelSmoke(win,service,root,dataDir,loadKey);}else{const {runDesktopSmoke}=await import('./smoke.mjs');await runDesktopSmoke(win,service,root);}}
+  try{if(startupSmokeMode){const {runStartupSmoke}=await import('./startup-smoke.mjs');await runStartupSmoke(win,service,root,loadNative,{startupURL,ready,initError});}else if(!ready||initError)throw Error(initError||'GameBuddy service not ready');else if(homeSmokeMode){const {runHomeSmoke}=await import('./home-smoke.mjs');await runHomeSmoke(win,service,root,dataDir,vault);}else if(marketSmokeMode){const {runNativeMarketSmoke}=await import('./market-smoke.mjs');await runNativeMarketSmoke(win,service,root);}else if(nativeSmokeMode){const {runNativeSmoke}=await import('./native-smoke.mjs');await runNativeSmoke(win,service,root,dataDir,vault);}else if(sessionModelSmokeMode){const {runSessionModelSmoke}=await import('./session-model-smoke.mjs');await runSessionModelSmoke(win,service,root);}else if(modelSmokeMode){const {runModelSmoke}=await import('./model-smoke.mjs');await runModelSmoke(win,service,root,dataDir,loadKey);}else{const {runDesktopSmoke}=await import('./smoke.mjs');await runDesktopSmoke(win,service,root);}}
   catch(error){console.error(error);code=1;}
   finally{quitting=true;hideSpectator();try{await service?.close();}catch(error){console.error(error);code=1;}shortcuts?.dispose();tray?.destroy();app.exit(code);}
  }
@@ -145,7 +148,7 @@ async function requestQuit(relaunch=false){if(quitting||quitPending)return;quitP
  if(active){const r=await dialog.showMessageBox(win,{type:'warning',buttons:['取消','停止任务并退出'],defaultId:0,cancelId:0,message:'退出会停止 GameBuddy 自动执行',detail:'已发生的游戏动作不能撤销；停止龙虾杀进程不代表远端已退出。'});if(r.response!==1){quitPending=false;return;}}
  quitting=true;hideSpectator();try{if(service)await service.close();}catch(e){quitting=false;quitPending=false;await dialog.showMessageBox(win,{type:'error',message:'停止服务遇到错误',detail:'自动执行状态未知，请检查日志。'+e.message});return;}shortcuts?.dispose();tray?.destroy();if(relaunch)app.relaunch();app.quit();}
 
-function trustedURL(url){if(url===uiURL)return true;if(!nativeOrigin)return false;try{const u=new URL(url);return u.origin===nativeOrigin&&u.pathname==='/';}catch{return false;}}
+function trustedURL(url){if(url===(nativeClient?startupURL:legacyUIURL))return true;if(!nativeOrigin)return false;try{const u=new URL(url);return u.origin===nativeOrigin&&u.pathname==='/';}catch{return false;}}
 // Match DSH's explicit system-browser action; guests have a separate deny policy.
 function installExternalLinks(owner){
  owner.webContents.setWindowOpenHandler(({url})=>{
@@ -162,5 +165,5 @@ async function loadNative(){
   if(!url||service.runtime.status!=='ready')throw Error('完整 Agent 客户端不可用：'+(service.startupError??'内核离线，请保存模型配置重试'));
   nativeOrigin=new URL(url).origin;
   if(win.webContents.getURL()!==url)await win.loadURL(url);
- }catch(e){initError=e.message;await win.loadURL(uiURL).catch(()=>{});throw e;}
+ }catch(e){initError=e.message;await win.loadURL(startupURL).catch(()=>{});throw e;}
 }

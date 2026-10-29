@@ -15,6 +15,7 @@
     "verify:permissions": "node scripts/verify-permissions.mjs",
     "verify:product": "node scripts/verify-product.mjs",
     "verify:desktop": "node scripts/verify-desktop.mjs",
+    "verify:startup": "node scripts/verify-startup.mjs",
     "legacy:setup": "node scripts/setup-profile.mjs",
     "legacy:doctor": "node scripts/doctor.mjs",
     "legacy:smoke": "node scripts/smoke-native.mjs",

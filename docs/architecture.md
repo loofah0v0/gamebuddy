@@ -53,7 +53,7 @@ native API 转发 create/list/inspect/rename/search/fork/selectModel/modelCatalo
 
 原生 credentials 通过主进程 safeStorage vault，串行/原子写、拒绝不合法引用/原型键/过大输入，无明文 fallback。兼容 Key 与 DeepSeek Key 分离，未配置搜索 provider 时准确失败。官方账号/遥测不是通用能力依赖，故意不接。
 
-主窗口游戏市场的临时 API 验证支持目录及小型推理探测，不保存 provider 或修改会话模型；保存请用原生设置。旧恢复界面仍保留兼容快捷路由；其 saveModel 有活动任务 admission、native 默认模型保存与配置更新，快捷 key/profile 两阶段提交及失败回滚。探测独立 POST completions，目录 GET models，不发历史/工具；草稿变化使旧结果失效。原生其它协议未被这份本地 completions QA 自动证明。
+主窗口游戏市场的临时 API 验证支持目录及小型推理探测，不保存 provider 或修改会话模型；保存请用原生设置。新启动恢复页仅在故障时提供模型连接设置；其 saveModel 有活动任务 admission、native 默认模型保存与配置更新，快捷 key/profile 两阶段提交及失败回滚。探测独立 POST completions，目录 GET models，不发历史/工具；草稿变化使旧结果失效。原生其它协议未被这份本地 completions QA 自动证明。
 
 ### 2.3 权限、游戏画面与边界
 

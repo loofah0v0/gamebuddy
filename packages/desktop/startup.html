@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width,initial-scale=1">
+ <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-src 'none'; object-src 'none'">
+ <title>GameBuddy</title>
+ <link rel="stylesheet" href="startup.css">
+</head>
+<body data-stage="loading">
+ <main class="startup">
+  <div class="brand" aria-label="GameBuddy"><span class="mark" aria-hidden="true">✦</span><strong>GameBuddy</strong></div>
+  <section class="status" aria-live="polite">
+   <div class="indicator" aria-hidden="true"></div>
+   <h1 id="heading">正在启动 GameBuddy</h1>
+   <p id="description">正在准备你的工作台，请稍候。</p>
+   <details id="diagnostic" hidden><summary>查看错误详情</summary><pre id="error"></pre></details>
+   <div class="actions" id="actions" hidden>
+    <button id="retry" hidden>重试打开工作台</button>
+    <button id="restart">重新启动</button>
+   </div>
+   <p id="action-error" class="error" role="alert" hidden></p>
+  </section>
+  <details id="model-recovery" class="model-recovery" hidden>
+   <summary>模型连接设置</summary>
+   <p>仅在连接设置需要修复时使用。密钥保存在本机系统加密存储中。</p>
+   <form id="model-form">
+    <label>提供商<select id="provider"><option value="deepseek">DeepSeek</option><option value="compatible">OpenAI 兼容端点</option></select></label>
+    <label>API 地址<input id="base-url" type="url" maxlength="2000" placeholder="https://your-endpoint.example/v1"></label>
+    <label>模型 ID<input id="model-id" maxlength="200" required></label>
+    <label>API 密钥<input id="api-key" type="password" maxlength="16000" autocomplete="off" placeholder="留空保留相同连接的已存密钥"></label>
+    <button id="save-model" type="submit">保存设置并重试</button>
+    <p id="model-error" class="error" role="alert" hidden></p>
+   </form>
+  </details>
+ </main>
+ <script src="startup.js"></script>
+</body>
+</html>

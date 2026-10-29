@@ -147,7 +147,8 @@ flowchart TB
 | [desktop](packages/desktop/main.mjs) | Electron 生命周期、单实例、托盘、可信窗口/IPC、凭据、目录选择、快捷键、browser guests、官方观战 | 不理解 MAA 的关卡/干员/任务参数 |
 | [native-client](packages/native-client/client.js) | 正式 Slot 上的品牌、首页、游戏市场、右侧游戏现场；连接原生会话和桌面桥 | 不替换原生编辑器、模型选择器或 Agent loop |
 | [agent-extensions](packages/agent-extensions/index.mjs) | 固定版通用插件管理页面的产品级适配，作为高级入口保留通用扩展能力 | 不是游戏市场后端；不改上游 checkout/node_modules |
-| [ui](packages/ui/index.html) | 初始化失败时的恢复界面及旧版兼容测试 | 不是生产主聊天工作台或独立游戏中心 |
+| [desktop/startup](packages/desktop/startup.html) | 启动状态、错误重试与模型连接恢复 | 不提供旧版聊天或游戏中心 |
+| [ui](packages/ui/index.html) | 仅供隔离兼容测试的旧界面 | 不参与产品启动或故障恢复 |
 | [app-service](packages/app-service/index.mjs) | task↔原生 session 绑定、业务工具入口、根 Agent 归属、实时权限、审批/问答、插件生命周期、模型快捷配置、事件/结果唤醒 | 不自行推理玩家目标；游戏计划语义交给插件 |
 | [runtime-dsh](packages/runtime-dsh/worker.mjs) | boot 原生 profile、LLM 和原生工具；注册产品身份/Skills/业务工具；session adoption、事件、模型和权限桥；SDK 兼容支路 | 不另造一套简化模型轮询循环 |
 | [core](packages/core/src/engine.ts) | `GamePlugin` 合同、实例/设备互斥、运行状态、deadline/AbortSignal、截图隐私、持久化和清理 | 不含游戏专属策略；不保证任意脚本也受管理 |
@@ -339,7 +340,7 @@ Buddy 可以自己写缺少的脚本、检查日志和运行测试，但**脚本
 
 - **原生设置**支持多提供商、协议和凭据，并拥有可编辑 profile；不需要为每次原生在线设置更改重启 Host。
 - **输入框模型选择器**切换当前会话的下次请求，历史保留、在途请求不变；推理强度按 adapter 元数据提供，不猜测模型 ID 或 effort。
-- **游戏市场 → API 验证**支持临时获取模型目录和验证 API，不保存配置、不修改会话模型。要添加或保存提供商，请使用主窗口“设置 → 模型”；旧恢复界面仍保留兼容快捷配置。
+- **游戏市场 → API 验证**支持临时获取模型目录和验证 API，不保存配置、不修改会话模型。要添加或保存提供商，请使用主窗口“设置 → 模型”；启动失败时，新恢复页提供必要的模型连接设置。
 - 获取模型目录不等于推理成功。API 验证发送一个小文本请求，可能产生费用；目录接口缺失时可填写提供商真实 ID。当前确定性端到端协议重点为 OpenAI completions，不保证所有协议/真实提供商都已验收。
 - 原生凭据保存在主进程 `native-credentials.bin`，快捷路由兼容文件为 `credentials.bin`，均用 Electron safeStorage 加密；没有明文保存回退。凭据在调用时必须进入本机进程/模型请求，加密落盘不代表内存、会话或所有日志都无敏感信息。
 
@@ -374,7 +375,7 @@ D:/Gameguy/
 │  ├─ desktop/                   Electron 主进程、桥、凭据和隔离浏览器
 │  ├─ native-client/             主工作台产品 UI / 原生凭据桥
 │  ├─ agent-extensions/          通用扩展页适配产物
-│  ├─ ui/                        初始化恢复界面及兼容测试
+│  ├─ ui/                        仅隔离兼容测试使用的旧界面
 │  ├─ app-service/               task、工具入口、市场、Monitor、存储、模型
 │  ├─ runtime-dsh/               profile、worker、身份、会话/权限/模型桥
 │  ├─ core/src/                  Engine / 合同 / 进程工具

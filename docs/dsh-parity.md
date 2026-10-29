@@ -6,7 +6,7 @@
 
 固定 npm `@deepseek-ai/dsh@0.2.1-rc.2`；只读上游 `D:/Gameguy/dsh`，commit `687f282e8625c6b8d11ff58211a90524be2e4317`。参考架构文档、client/session-controller/model-selection、web-app profile 与 Desktop host 实现。只保证该固定版本的接入，不承诺未来自动一致。
 
-之前完整 SDK 只接通内核和部分 Host，缺少客户端层。本次主窗口使用完整原生 **web profile + 原生客户端模块**，GameGuy Electron 补齐桌面桥，`@gameguy/native-client` 注入产品品牌和同会话游戏现场。游戏领域仍由自有插件/应用服务管理。旧自有 UI 保留为初始化失败恢复界面，不再作为游戏中心或主聊天工作台。
+之前完整 SDK 只接通内核和部分 Host，缺少客户端层。本次主窗口使用完整原生 **web profile + 原生客户端模块**，GameGuy Electron 补齐桌面桥，`@gameguy/native-client` 注入产品品牌和同会话游戏现场。游戏领域仍由自有插件/应用服务管理。旧自有 UI 仅供隔离兼容测试，生产启动和故障恢复均使用新的简洁状态页。
 
 三层分别验收：原生 Agent/工具/会话 → Host/API/桌面桥 → 真实客户端操作。模块存在、入口可见、实际交互成功、外部实机闭环是不同证据级别。
 
@@ -35,7 +35,7 @@
 ## 3. 模型和配置所有权
 
 - **设置 → 模型**是多 provider / 默认值 / 会话目录的权威来源。初次 bootstrap 之后可编辑原生 profile 不在重启时重写。
-- 主窗口游戏市场的 URL/Key/目录/API 验证仅测试临时草稿，不保存模型；目录获取与推理验证分开。模型保存仍在原生设置，旧恢复界面保留快捷路由。
+- 主窗口游戏市场的 URL/Key/目录/API 验证仅测试临时草稿，不保存模型；目录获取与推理验证分开。模型保存仍在原生设置；启动故障时，新恢复页可修复模型连接。
 - 原生设置在线更新、不重启 Host；快捷配置保存有活动任务防护。旧 SDK 支路保留其重启合同，不能套到主原生工作台。
 - 当前会话选择用原生 API；在途请求不变，下次 assembly 生效。API Key 通过 safeStorage vault，原生 profile 仅保存引用，不以明文降级。
 - 本地测试只覆盖 completions；表单提供其它协议不意味着这些已认证/推理/视觉验收。
