@@ -4,7 +4,7 @@
 
 GameBuddy（助手称呼 **Buddy**）通过对话理解玩家目标，发现环境、配置游戏工具、执行任务、展示游戏现场并汇报结果。资料检索、文件操作、终端、脚本编写、计划与子 Agent 是同一个 Agent 的基础能力，用来辅助完成游戏或工作任务，而不是另一套简化聊天系统。
 
-> **当前状态：v0.3 源码开发原型，Windows 优先。** 已接入明日方舟 / Minecraft / 龙虾杀三个独立游戏包；市场目前是内置离线可信目录，不是已经上线的远程下载商店。UI、模型路由与执行合同已有自动化验证，但不能由此推导所有真实游戏目标已验收。
+> **当前状态：v0.3 源码开发原型，Windows 优先。** 已接入明日方舟 / Minecraft / ccl三个独立游戏包；市场目前是内置离线可信目录，不是已经上线的远程下载商店。UI、模型路由与执行合同已有自动化验证，但不能由此推导所有真实游戏目标已验收。
 >
 > 本文按 **2026-10-28 当前源码**整理，是当前项目架构入口。产品展示名已改为 GameBuddy；目录、数据和内部 `gameguy` 标识保留兼容。旧设计文档中的历史描述不应覆盖本页明确列出的实现边界。
 
@@ -39,7 +39,7 @@ GameBuddy（助手称呼 **Buddy**）通过对话理解玩家目标，发现环�
 | 模型 | 在设置中配置可用提供商、模型与凭据；目录接口和推理接口需分别检查 |
 | 明日方舟（按需） | 64 位 Python **3.12+**、MAA/MaaCore 和资源、ADB、已安装游戏的模拟器；游戏登录由玩家完成 |
 | Minecraft（按需） | 玩家授权的 Minecraft Java `offline-mode` 私人测试服 |
-| 龙虾杀（按需） | 官方 ccl CLI **0.9.1** 已列为精确 npm 依赖，身份按官方流程配置 |
+| ccl（按需） | 官方 ccl CLI **0.9.1** 已列为精确 npm 依赖，身份按官方流程配置 |
 
 ### 安装与启动
 
@@ -87,7 +87,7 @@ npm.cmd start
 | --- | --- | --- |
 | **明日方舟 0.3.7** | MAA Skill、依赖/模拟器发现、自然语言需求编译、配置、设备启动和诊断；基建收取、普通自动换班/已有自定义方案、好友信用、可选购物、奖励与邮件、有限刷关和肉鸽；ADB 截图、每日模板 | 受管理插件未暴露游戏内方案 `mode=20000` 和完整公开招募；登录不是 Agent 自动代输密码；不保证最优排班、严格折扣购物、肉鸽通关或奖励独立核验 |
 | **Minecraft 0.3.2** | Mineflayer adapter + Skill；授权 Java offline-mode 测试服 `observe / goto / dig`、有界状态和停止 | Microsoft/线上账号认证、craft/equip、任意建造、完整石镐目标、独立 worker 隔离未完成 |
-| **龙虾杀 0.3.1** | 官方 Skill 包、原始 ccl 命令、受管理前台长连接 Monitor、事件唤醒、官方网页观战 | 不重包 `speak/vote` 为虚构 gameplay API；本地停止不证明远端退房；真实完整对局、断线恢复仍需专项验收 |
+| **ccl 0.3.1** | 官方 Skill 包、原始 ccl 命令、受管理前台长连接 Monitor、事件唤醒、官方网页观战 | 不重包 `speak/vote` 为虚构 gameplay API；本地停止不证明远端退房；真实完整对局、断线恢复仍需专项验收 |
 
 市场文案和首页提示词是**需求入口**，不是可执行能力证明；实际执行范围以插件 schema、Skill、宿主校验和真实回执为准。
 
@@ -121,7 +121,7 @@ flowchart TB
   E --> MC[当前进程内 Mineflayer bot]
   MC --> SV[授权 Minecraft 私人服]
   S --> C[Monitor → 官方 ccl 子进程]
-  C --> CL[龙虾杀官方服务]
+  C --> CL[ccl官方服务]
   R --> GW[主窗口游戏市场 / 设备 / 计划 / API 验证]
   P --> B[隔离浏览器 / 人类专用观战容器]
 ```
@@ -237,7 +237,7 @@ Windows 启动器会把 npm Electron 的完整发行字节清单复制并校验�
 
 ### 当前市场
 
-**三个游戏是三个包**，统一通过市场安装/启停；龙虾杀包内仍直接复用官方 Skill，不需要为了“插件化”重写发言/投票接口。
+**三个游戏是三个包**，统一通过市场安装/启停；ccl包内仍直接复用官方 Skill，不需要为了“插件化”重写发言/投票接口。
 
 - 可信目录：[product/catalog.json](D:/Gameguy/product/catalog.json)。源包：`D:/Gameguy/product/plugins/<id>`。
 - 已安装包：`D:/Gameguy/product/installed/<dataDir 指纹前20位>/<id>-<version>`；指纹为 `sha256(JSON.stringify(dataDir))`，不是明文账号，不是 `%APPDATA%/plugins`。
@@ -252,7 +252,7 @@ catalog 绑定 `id / version / kind / permissions / dependencies / manifestSha25
 | kind | entry | 启用行为 | 执行边界 |
 | --- | --- | --- | --- |
 | `adapter` | `lib/index.js` | import adapter，校验公共合同并 `Engine.register`，同步 Skill | 使用受管理配置/计划、锁、期限、事件和清理 |
-| `skill` | `skills/<id>/SKILL.md` | 检查固定依赖，只注册 Skill | 原始 CLI/通用工具；龙虾杀 stream 额外接 Monitor |
+| `skill` | `skills/<id>/SKILL.md` | 检查固定依赖，只注册 Skill | 原始 CLI/通用工具；ccl stream 额外接 Monitor |
 | `script` | `skills/<id>/SKILL.md`，另有 `scripts/` | 注册 Skill；安装不执行脚本/npm lifecycle | Skill 指导 Agent 经通用工具运行；**不自动继承 adapter 的资源/停止/调度保障** |
 
 安装拒绝 symlink、目录逃逸、清单外文件、哈希不符、版本/权限/home/依赖与可信目录不符。依赖精确版本不满足则失败，**不会偷偷 npm install 任意依赖**。清单摘要提供本地完整性，不是已部署的发布方数字签名或第三方信任体系。
@@ -271,7 +271,7 @@ execute 接收：config、plan、GameRuntime{signal, event, deliver?, preview?}
 
 `setup` 属于插件的有限环境发现；`prepare` 是纯提案生成；`execute` 必须响应取消和清理自己拥有的资源。可选 `control` 接口存在，不表示产品已向 Agent 开放视觉点击/登录工具。
 
-应用服务提供发现/安装/读取 Skill/setup/status/stop 等基础工具，以及已接入 adapter 的 configure/prepare/diagnose/run。明日方舟再加 device_start/schedule 管理，龙虾杀加 preview/Monitor。**业务作用域不影响原生通用工具，但宿主会检查当前 task、实例、插件和根 Agent 归属。** Minecraft 尚无 `prepare` 实现；调用会明确返回不支持。
+应用服务提供发现/安装/读取 Skill/setup/status/stop 等基础工具，以及已接入 adapter 的 configure/prepare/diagnose/run。明日方舟再加 device_start/schedule 管理，ccl加 preview/Monitor。**业务作用域不影响原生通用工具，但宿主会检查当前 task、实例、插件和根 Agent 归属。** Minecraft 尚无 `prepare` 实现；调用会明确返回不支持。
 
 ### 首页能力元数据
 
@@ -308,7 +308,7 @@ npm.cmd run package:game -- D:\path\descriptor.json D:\path\source D:\path\absen
 
 TCP 诊断成功只证明端口可达，不证明版本或账号可登录。当前进程内执行没有单独 worker 故障隔离；仍需在玩家授权私人服实测，而不是把有限动作宣称为完整自主生存。
 
-### 龙虾杀：官方 Skill + ccl
+### ccl：官方 Skill + ccl
 
 构建从固定 `@myclaw163/clawclaw-cli@0.9.1` 提取官方 Skill。Agent 根据 Skill 使用原始 ccl 发言/投票等命令；前台 start/join 长连接必须由 Monitor 管理，不在 shell 中偷偷后台启动流。
 
@@ -465,12 +465,12 @@ npm.cmd run pack:plugins         # 本地可信包 tgz + 校验摘要，不发�
 - 首页悬停/示例点击 **0** 次模型请求，显式手动发送 **1** 次本地夹具请求；真实游戏动作和外部模型请求 **0**。
 - 独立 React 市场 15 项（本地证据：`D:/Gameguy/artifacts/verification/game-market-ui/report.json`，不随源码上传）、原生市场 10 项（本地证据：`D:/Gameguy/artifacts/verification/native-game-market/report.json`，不随源码上传）、现场 UI 10 项（本地证据：`D:/Gameguy/artifacts/verification/game-dock-ui/report.json`，不随源码上传） 有各自报告，不能与全量桌面回归混为一项。
 
-真实账号奖励核验、长时间无人值守、完整 MC 目标/龙虾杀对局需要单独实机证据。历史 `npm audit` 数字随时间变化，不能写成当前安全结论；公开发布前必须重新审计和处置，不能用 `npm audit fix --force` 绕过固定堆栈兼容性。
+真实账号奖励核验、长时间无人值守、完整 MC 目标/ccl对局需要单独实机证据。历史 `npm audit` 数字随时间变化，不能写成当前安全结论；公开发布前必须重新审计和处置，不能用 `npm audit fix --force` 绕过固定堆栈兼容性。
 
 ## 已知缺口与发布门槛
 
 1. **远程市场**：注册表、托管、下载、签名/信任根、版本升级/回滚、第三方上传未交付；需 HTTPS 源策略、容量限制、安全解包、摘要/签名和更新测试。
-2. **后端能力**：MAA mode=20000/公开招募仍在脚本支路；MC craft/equip/认证/worker；龙虾杀正式远端退出和断线恢复需要继续实现/验收。
+2. **后端能力**：MAA mode=20000/公开招募仍在脚本支路；MC craft/equip/认证/worker；ccl正式远端退出和断线恢复需要继续实现/验收。
 3. **闭环核验**：started、后端完成和奖励验证分开；不能在未取得游戏事实时说“已收菜成功”。
 4. **安装发行**：当前依赖外部 Node/Python 和源码目录；安装器、托管依赖、卸载/数据迁移、自动更新尚未完备。
 5. **安全治理**：本机代码信任、插件授权粒度、日志脱敏、凭据/权限回归和当前依赖漏洞需要发布前复审。
